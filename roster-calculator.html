@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="天南市">
+<meta name="theme-color" content="#2563eb">
+<title>天南市 掛牌車計算機</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%232563eb'/><text x='90' y='128' font-size='110' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>天</text></svg>">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    padding: 24px 14px 70px;
+    padding-top: calc(24px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang HK", "PingFang TC",
+                 "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    background: linear-gradient(180deg, #e9f0fb 0%, #eef2f7 280px);
+    background-attachment: fixed;
+    color: #1e293b; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 22px; }
+  header h1 { margin: 0 0 6px; font-size: 25px; letter-spacing: 3px; font-weight: 700; }
+  header h1 em { font-style: normal; color: #2563eb; }
+  header p { margin: 0; font-size: 13px; color: #64748b; letter-spacing: 1px; }
+
+  .card {
+    background: #fff; border-radius: 14px; padding: 20px;
+    box-shadow: 0 2px 14px rgba(15, 23, 42, .07); margin-bottom: 16px;
+  }
+  .card h2 {
+    margin: 0 0 16px; font-size: 15px; font-weight: 700; letter-spacing: 1px;
+    padding-left: 10px; border-left: 4px solid #2563eb; line-height: 1.15;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card h2 .tag {
+    font-size: 11px; font-weight: 600; color: #64748b; letter-spacing: .5px;
+    background: #f1f5f9; padding: 3px 8px; border-radius: 6px;
+  }
+  .card h2.station-a { border-left-color: #16a34a; }
+  .card h2.station-b { border-left-color: #a855f7; }
+
+  .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mode-opt {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 14px 8px; border: 2px solid #e3eaf4; border-radius: 11px;
+    cursor: pointer; transition: all .15s; text-align: center;
+    background: #fbfcfe;
+  }
+  .mode-opt input { display: none; }
+  .mode-opt .t { font-size: 14px; font-weight: 700; color: #475569; letter-spacing: .5px; }
+  .mode-opt .d { font-size: 11px; color: #94a3b8; }
+  .mode-opt.on { border-color: #2563eb; background: #eff6ff; }
+  .mode-opt.on .t { color: #2563eb; }
+  .mode-opt.on .d { color: #60a5fa; }
+
+  .params { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .params-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .params-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; color: #64748b; margin-bottom: 6px; letter-spacing: .5px; }
+  .field input {
+    width: 100%; padding: 11px 12px; border: 1.5px solid #dbe3ee; border-radius: 9px;
+    font-size: 16px; font-family: inherit; color: #1e293b; background: #fbfcfe;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field input:focus {
+    outline: none; border-color: #2563eb; background: #fff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  }
+  .field .hint { font-size: 11px; color: #94a3b8; margin-top: 5px; }
+  .field input.accent-a:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, .12); }
+  .field input.accent-b:focus { border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168, 85, 247, .12); }
+
+  .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+  .period-table .col-start { width: 26%; }
+  .period-table .col-end   { width: 26%; }
+  .period-table .col-gap   { width: 26%; }
+  .period-table .col-del   { width: 12%; }
+
+  thead th {
+    background: #f6f9fd; color: #475569; font-size: 12.5px; font-weight: 600;
+    text-align: left; padding: 10px 12px; border-bottom: 1.5px solid #e3eaf4;
+    white-space: nowrap; letter-spacing: .5px;
+  }
+  tbody td { padding: 7px 12px; border-bottom: 1px solid #eef2f8; vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #f9fbfe; }
+
+  .cell-input {
+    width: 100%; min-width: 100px; padding: 9px 10px; border: 1.5px solid #dbe3ee;
+    border-radius: 8px; font-size: 16px; font-family: inherit; color: #1e293b;
+    background: #fbfcfe; transition: border-color .15s, box-shadow .15s;
+  }
+  .cell-input:focus {
+    outline: none; border-color: #2563eb; background: #fff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  }
+  .cell-input.gap { min-width: 70px; }
+
+  .del-btn {
+    background: none; border: none; color: #cbd5e1; font-size: 18px;
+    cursor: pointer; padding: 6px 10px; border-radius: 7px; line-height: 1;
+  }
+  .del-btn:active { color: #ef4444; background: #fef2f2; }
+
+  .btn {
+    border: none; border-radius: 10px; padding: 12px 22px; font-size: 15px;
+    font-family: inherit; font-weight: 600; cursor: pointer; letter-spacing: 1px;
+    -webkit-user-select: none; user-select: none;
+  }
+  .btn-primary { background: #2563eb; color: #fff; box-shadow: 0 3px 12px rgba(37, 99, 235, .3); }
+  .btn-primary:active { background: #1d4ed8; transform: translateY(1px); }
+  .btn-ghost { background: #f1f5f9; color: #475569; padding: 11px 18px; font-size: 13.5px; letter-spacing: .5px; }
+  .btn-ghost:active { background: #e6ecf4; }
+  .btn-export { background: #0891b2; color: #fff; box-shadow: 0 3px 12px rgba(8, 145, 178, .3); }
+  .btn-export:active { background: #0e7490; transform: translateY(1px); }
+  .btn-green-outline {
+    background: #fff; color: #16a34a; padding: 11px 18px; font-size: 13.5px;
+    letter-spacing: .5px; border: 1.5px solid #bbf7d0;
+  }
+  .btn-green-outline:active { background: #f0fdf4; }
+  .btn-purple-outline {
+    background: #fff; color: #a855f7; padding: 11px 18px; font-size: 13.5px;
+    letter-spacing: .5px; border: 1.5px solid #e9d5ff;
+  }
+  .btn-purple-outline:active { background: #fdf4ff; }
+
+  .actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: 16px; flex-wrap: wrap; }
+  .actions .btn-primary { margin-left: auto; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat {
+    background: #fff; border-radius: 12px; padding: 15px 8px; text-align: center;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, .06);
+  }
+  .stat-label { font-size: 11.5px; color: #64748b; margin-bottom: 7px; letter-spacing: .5px; }
+  .stat-val { font-size: 25px; font-weight: 700; color: #1e293b; line-height: 1; }
+  .stat-val.blue { color: #2563eb; }
+  .stat-val.orange { color: #ea580c; }
+
+  .badge {
+    display: inline-block; border-radius: 6px; padding: 3px 9px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: .5px; white-space: nowrap;
+  }
+  .badge-r { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+  .badge-s { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
+  .badge-a { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+  .badge-b { background: #fdf4ff; color: #a855f7; border: 1px solid #e9d5ff; }
+  .badge-forced { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+  .max-h { max-height: 430px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+  .note { font-size: 12.5px; color: #64748b; line-height: 1.85; letter-spacing: .3px; }
+  .note code { background: #f1f5f9; padding: 1px 6px; border-radius: 5px; font-size: 12px; color: #334155; }
+  .note b.a { color: #16a34a; }
+  .note b.b { color: #a855f7; }
+
+  .hidden { display: none !important; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(15, 23, 42, .55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px; z-index: 1000;
+    -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+    animation: fadeIn .15s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: #fff; border-radius: 16px;
+    width: 100%; max-width: 600px; max-height: 88vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .35);
+    animation: slideUp .18s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(18px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid #eef2f8;
+  }
+  .modal-header h3 { margin: 0; font-size: 16px; letter-spacing: 1px; font-weight: 700; }
+  .modal-header h3 em { font-style: normal; color: #2563eb; }
+  .modal-header h3 em.a { color: #16a34a; }
+  .modal-header h3 em.b { color: #a855f7; }
+  .modal-header h3 em.exp { color: #0891b2; }
+  .modal-close {
+    background: none; border: none; font-size: 26px; color: #94a3b8;
+    cursor: pointer; padding: 0 6px; line-height: 1;
+  }
+  .modal-close:active { color: #475569; }
+  .modal-body { padding: 18px 20px; overflow-y: auto; }
+  .modal-textarea {
+    width: 100%; min-height: 210px;
+    padding: 12px 14px;
+    border: 1.5px solid #dbe3ee; border-radius: 9px;
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 13px; line-height: 1.8;
+    background: #fbfcfe; color: #1e293b;
+    resize: vertical;
+    -webkit-appearance: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .modal-textarea:focus {
+    outline: none; border-color: #2563eb; background: #fff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  }
+  .modal-hint { font-size: 12px; color: #94a3b8; margin-top: 10px; line-height: 1.7; }
+  .modal-hint code { background: #f1f5f9; padding: 1px 6px; border-radius: 5px; font-size: 11.5px; color: #334155; }
+  .modal-footer {
+    display: flex; gap: 10px; justify-content: flex-end;
+    padding: 14px 20px; border-top: 1px solid #eef2f8;
+    flex-wrap: wrap;
+  }
+  .modal-footer .btn { padding: 10px 20px; font-size: 14px; }
+
+  .export-options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .export-opt {
+    padding: 14px 8px; border: 2px solid #e3eaf4; border-radius: 11px;
+    cursor: pointer; text-align: center; background: #fbfcfe;
+    transition: all .15s;
+  }
+  .export-opt .t { font-size: 14px; font-weight: 700; color: #475569; }
+  .export-opt .d { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+  .export-opt.on { border-color: #0891b2; background: #ecfeff; }
+  .export-opt.on .t { color: #0891b2; }
+  .export-opt.on .d { color: #22d3ee; }
+
+  @media (max-width: 660px) {
+    .params, .params-2, .params-3 { grid-template-columns: 1fr; gap: 12px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    header h1 { font-size: 21px; letter-spacing: 2px; }
+    .actions { justify-content: stretch; }
+    .actions .btn { flex: 1 1 auto; }
+    .actions .btn-primary { flex-basis: 100%; order: -1; margin-left: 0; }
+    .export-options { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>天南市 <em>掛牌車計算機</em></h1>
+    <p>BUS FLEET ALLOCATION SIMULATOR</p>
+  </header>
+
+  <div class="card">
+    <h2>路線資料</h2>
+    <div class="params-3">
+      <div class="field">
+        <label>路線號碼</label>
+        <input type="text" id="routeNo" value="72" placeholder="例如 72" maxlength="10">
+      </div>
+      <div class="field">
+        <label>A 總站名稱</label>
+        <input type="text" id="nameA" value="天堂島巴士總站" placeholder="例如 天堂島巴士總站" maxlength="20" class="accent-a">
+      </div>
+      <div class="field">
+        <label>B 總站名稱</label>
+        <input type="text" id="nameB" value="寂靜天地" placeholder="例如 寂靜天地" maxlength="20" class="accent-b">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>路線模式</h2>
+    <div class="mode-switch">
+      <label class="mode-opt on" id="modeOptBi">
+        <input type="radio" name="mode" value="bidirectional" checked>
+        <span class="t">雙向線</span>
+        <span class="d" id="modeDescBi">天堂島巴士總站 ↔ 寂靜天地</span>
+      </label>
+      <label class="mode-opt" id="modeOptCir">
+        <input type="radio" name="mode" value="circular">
+        <span class="t">循環線</span>
+        <span class="d">A → B → C → A</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>基本參數</h2>
+    <div class="params">
+      <div class="field">
+        <label id="lblTravel">單程時間（分鐘）</label>
+        <input type="number" id="travelTime" value="25" min="1" step="1" inputmode="numeric">
+        <div class="hint" id="hintTravel">由總站開到對面總站所需時間</div>
+      </div>
+      <div class="field">
+        <label>備用車門檻（%）</label>
+        <input type="number" id="sThreshold" value="50" min="1" max="100" step="1" inputmode="numeric">
+        <div class="hint">活躍時間低於全日的此比例 → 備用車</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="station-a" id="titleA">天堂島巴士總站 <span class="tag">雙向線</span></h2>
+    <div class="params-2">
+      <div class="field">
+        <label id="lblDwellA">天堂島 總站停留（分鐘）</label>
+        <input type="number" id="dwellA" value="10" min="0" step="1" inputmode="numeric" class="accent-a">
+        <div class="hint">車到站後最少休息多久才可再開</div>
+      </div>
+      <div class="field">
+        <label id="lblCapA">天堂島 總站容量（輛）</label>
+        <input type="number" id="capA" value="2" min="0" step="1" inputmode="numeric" class="accent-a">
+        <div class="hint">最多同時停幾輛；滿了強制發車</div>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table class="period-table">
+        <thead>
+          <tr>
+            <th class="col-start">開始時間</th>
+            <th class="col-end">結束時間</th>
+            <th class="col-gap">班次間隔（分鐘）</th>
+            <th class="col-del">操作</th>
+          </tr>
+        </thead>
+        <tbody id="periodBodyA"></tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <button class="btn btn-green-outline" type="button" data-import="A">📋 批量導入 A</button>
+      <button class="btn btn-ghost" type="button" data-add="A">＋ 新增時段</button>
+    </div>
+  </div>
+
+  <div class="card" id="cardB">
+    <h2 class="station-b" id="titleB">寂靜天地 <span class="tag">雙向線</span></h2>
+    <div class="params-2">
+      <div class="field">
+        <label id="lblDwellB">寂靜天地 總站停留（分鐘）</label>
+        <input type="number" id="dwellB" value="10" min="0" step="1" inputmode="numeric" class="accent-b">
+        <div class="hint">車到站後最少休息多久才可再開</div>
+      </div>
+      <div class="field">
+        <label id="lblCapB">寂靜天地 總站容量（輛）</label>
+        <input type="number" id="capB" value="1" min="0" step="1" inputmode="numeric" class="accent-b">
+        <div class="hint">最多同時停幾輛；滿了強制發車</div>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table class="period-table">
+        <thead>
+          <tr>
+            <th class="col-start">開始時間</th>
+            <th class="col-end">結束時間</th>
+            <th class="col-gap">班次間隔（分鐘）</th>
+            <th class="col-del">操作</th>
+          </tr>
+        </thead>
+        <tbody id="periodBodyB"></tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <button class="btn btn-purple-outline" type="button" data-import="B">📋 批量導入 B</button>
+      <button class="btn btn-ghost" type="button" data-add="B">＋ 新增時段</button>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 16px 20px;">
+    <div class="actions" style="margin-top: 0;">
+      <button class="btn btn-ghost" type="button" id="clearAll">全部清空</button>
+      <button class="btn btn-primary" type="button" id="calcBtn">開始計算</button>
+    </div>
+  </div>
+
+  <div id="result" class="hidden">
+    <div class="stats">
+      <div class="stat"><div class="stat-label">總班次</div><div class="stat-val" id="statTrips">–</div></div>
+      <div class="stat"><div class="stat-label">總用車</div><div class="stat-val" id="statBuses">–</div></div>
+      <div class="stat"><div class="stat-label">正軌車</div><div class="stat-val blue" id="statRegular">–</div></div>
+      <div class="stat"><div class="stat-label">備用車</div><div class="stat-val orange" id="statS">–</div></div>
+    </div>
+
+    <div class="card">
+      <h2>用車總結</h2>
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>車輛</th><th>類型</th><th>首次出場</th>
+              <th>末次出場</th><th>活躍時間</th><th>班次數</th>
+            </tr>
+          </thead>
+          <tbody id="busBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>派車表</h2>
+      <div class="tbl-scroll max-h">
+        <table>
+          <thead>
+            <tr><th>#</th><th>發車時間</th><th>出發站</th><th>派出車輛</th><th>備註</th></tr>
+          </thead>
+          <tbody id="tripBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 16px 20px;">
+      <div class="actions" style="margin-top: 0;">
+        <button class="btn btn-export" type="button" id="exportBtn">📤 導出結果</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>使用說明</h2>
+    <div class="note">
+      1. 先在「路線資料」填寫路線號碼、兩個總站名稱。<br>
+      2. <b class="a">A 總站</b>、<b class="b">B 總站</b> 各有自己的<b>停留時間</b>、<b>容量</b>、<b>時間表</b>。<br>
+      3. 按「📋 批量導入」按鈕，彈出窗口貼上時間表（每行 <code>0500-0700@30</code>）。<br>
+      4. <b>每個總站的最後一個時段會包含結束時間那一班</b>（例如 <code>1900-0100@30</code> 會開到 01:00）；中間時段不重複。<br>
+      5. <b>容量限制</b>：某總站已滿時，下一個班次即使車沒停夠也會被強制派出（派車表標 <span class="badge badge-forced">總站滿</span>）。<br>
+      6. 循環線模式下，B 總站卡片隱藏，A 總站的停留時間／容量即為整條循環線的唯一總站。<br>
+      7. 活躍時間低於全日 <b>備用車門檻</b> 的車標記為 <b>備用車</b>（S1、S2、S3…），其餘為 <b>正軌車</b>（1、2、3…）。
+    </div>
+  </div>
+
+</div>
+
+<!-- 導入模態框 -->
+<div id="importModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>批量導入 <em id="modalStationName" class="a">A 總站</em> 時間表</h3>
+      <button class="modal-close" type="button" id="modalClose">×</button>
+    </div>
+    <div class="modal-body">
+      <textarea id="modalTextarea" class="modal-textarea" spellcheck="false"
+        placeholder="0500-0700@30&#10;0700-1000@20&#10;1000-1500@15&#10;1500-1900@20&#10;1900-0100@30"></textarea>
+      <div class="modal-hint">
+        每行一個時段：<code>開始-結束@間隔</code><br>
+        時間可寫 <code>0500</code>、<code>500</code>、<code>05:00</code>；導入後會覆蓋原有時段。
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" type="button" id="modalCancel">取消</button>
+      <button class="btn btn-primary" type="button" id="modalConfirm">導入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 導出模態框 -->
+<div id="exportModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>導出結果 <em class="exp">📤</em></h3>
+      <button class="modal-close" type="button" id="exportClose">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="export-options">
+        <div class="export-opt on" data-fmt="txt">
+          <div class="t">純文字</div>
+          <div class="d">.txt</div>
+        </div>
+        <div class="export-opt" data-fmt="csv">
+          <div class="t">CSV</div>
+          <div class="d">.csv</div>
+        </div>
+        <div class="export-opt" data-fmt="json">
+          <div class="t">JSON</div>
+          <div class="d">.json</div>
+        </div>
+      </div>
+      <textarea id="exportTextarea" class="modal-textarea" spellcheck="false" readonly style="min-height:320px"></textarea>
+      <div class="modal-hint">
+        可以直接選取複製，或按下方「下載檔案」儲存。
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" type="button" id="exportCloseBtn">關閉</button>
+      <button class="btn btn-ghost" type="button" id="exportCopyBtn">📋 複製</button>
+      <button class="btn btn-primary" type="button" id="exportDownloadBtn">⬇️ 下載檔案</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  function $(id) { return document.getElementById(id); }
+
+  function timeToMin(str) {
+    var p = String(str).split(":");
+    return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+  }
+  function minToTime(m) {
+    var v = ((m % 1440) + 1440) % 1440;
+    return String(Math.floor(v / 60)).padStart(2, "0") + ":" +
+           String(v % 60).padStart(2, "0");
+  }
+  function fmtTime(m) {
+    var day = Math.floor(m / 1440);
+    if (day > 0) return minToTime(m) + " (次日)";
+    return minToTime(m);
+  }
+  function fmtDur(mins) {
+    var h = Math.floor(mins / 60), m = mins % 60;
+    if (h && m) return h + " 小時 " + m + " 分";
+    if (h) return h + " 小時";
+    return m + " 分";
+  }
+
+  function displayWidth(str) {
+    var w = 0;
+    for (var i = 0; i < str.length; i++) {
+      var code = str.charCodeAt(i);
+      if (code > 0x2E80) w += 2;
+      else w += 1;
+    }
+    return w;
+  }
+  function padRight(str, width) {
+    var s = String(str);
+    var w = displayWidth(s);
+    while (w < width) { s += " "; w++; }
+    return s;
+  }
+  function padLeft(str, width) {
+    var s = String(str);
+    var w = displayWidth(s);
+    while (w < width) { s = " " + s; w++; }
+    return s;
+  }
+
+  var bodyA = $("periodBodyA");
+  var bodyB = $("periodBodyB");
+  var currentMode = "bidirectional";
+  var lastResult = null;
+
+  function createRow(container, start, end, gap) {
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><input type="time" class="cell-input p-start" value="' + (start || "06:00") + '"></td>' +
+      '<td><input type="time" class="cell-input p-end" value="' + (end || "08:00") + '"></td>' +
+      '<td><input type="number" class="cell-input gap p-gap" min="1" step="1" inputmode="numeric" value="' + (gap || 15) + '"></td>' +
+      '<td><button type="button" class="del-btn" data-action="del-row">✕</button></td>';
+    container.appendChild(tr);
+  }
+
+  function parseTimeToHHMM(raw) {
+    var s = String(raw).trim();
+    if (s.indexOf(":") >= 0) {
+      var p = s.split(":");
+      var hh0 = parseInt(p[0], 10), mm0 = parseInt(p[1], 10);
+      if (isNaN(hh0) || isNaN(mm0) || hh0 > 23 || mm0 > 59) return null;
+      return String(hh0).padStart(2, "0") + ":" + String(mm0).padStart(2, "0");
+    }
+    s = s.replace(/\D/g, "");
+    if (s.length < 3) return null;
+    s = s.padStart(4, "0");
+    var hh = parseInt(s.slice(0, 2), 10);
+    var mm = parseInt(s.slice(2), 10);
+    if (hh > 23 || mm > 59) return null;
+    return String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+  }
+  function parseSeg(str) {
+    var m = String(str).match(/^\s*(\d{1,2}:?\d{0,2})\s*-\s*(\d{1,2}:?\d{0,2})\s*@\s*(\d+)\s*$/);
+    if (!m) return null;
+    var start = parseTimeToHHMM(m[1]);
+    var end = parseTimeToHHMM(m[2]);
+    var gap = parseInt(m[3], 10);
+    if (!start || !end || !(gap > 0)) return null;
+    return { start: start, end: end, gap: gap };
+  }
+  function tableToText(container) {
+    var lines = [];
+    for (var i = 0; i < container.rows.length; i++) {
+      var start = container.rows[i].querySelector(".p-start").value;
+      var end = container.rows[i].querySelector(".p-end").value;
+      var gap = container.rows[i].querySelector(".p-gap").value;
+      if (!start || !end || !gap) continue;
+      lines.push(start.replace(":", "") + "-" + end.replace(":", "") + "@" + gap);
+    }
+    return lines.join("\n");
+  }
+
+  var modal = $("importModal");
+  var modalTextarea = $("modalTextarea");
+  var modalStationName = $("modalStationName");
+  var currentImportStation = null;
+
+  function openImportModal(station) {
+    currentImportStation = station;
+    var name = station === "A" ? ($("nameA").value.trim() || "A 總站")
+                               : ($("nameB").value.trim() || "B 總站");
+    modalStationName.textContent = name;
+    modalStationName.className = station === "A" ? "a" : "b";
+    var container = station === "A" ? bodyA : bodyB;
+    modalTextarea.value = tableToText(container);
+    modal.classList.remove("hidden");
+    setTimeout(function () { try { modalTextarea.focus(); } catch (e) {} }, 80);
+  }
+  function closeImportModal() {
+    modal.classList.add("hidden");
+    currentImportStation = null;
+  }
+  function applyImport() {
+    if (!currentImportStation) return;
+    var container = currentImportStation === "A" ? bodyA : bodyB;
+    var text = modalTextarea.value;
+    var lines = text.split(/\r?\n/);
+    var parsed = [], errors = [];
+    for (var i = 0; i < lines.length; i++) {
+      var raw = lines[i];
+      if (raw.trim() === "") continue;
+      if (raw.indexOf("\t") >= 0) raw = raw.split("\t")[0];
+      var seg = parseSeg(raw);
+      if (seg) parsed.push(seg);
+      else errors.push("第 " + (i + 1) + " 行：「" + lines[i].trim() + "」");
+    }
+    if (parsed.length === 0) {
+      alert("沒有解析到任何有效時段。\n\n" +
+        (errors.length ? "問題行：\n" + errors.join("\n") : "請檢查格式是否為 0500-0700@30。"));
+      return;
+    }
+    container.innerHTML = "";
+    parsed.forEach(function (seg) { createRow(container, seg.start, seg.end, seg.gap); });
+    closeImportModal();
+    if (errors.length > 0) {
+      alert("已導入 " + parsed.length + " 個時段，但以下行無法解析已略過：\n\n" + errors.join("\n"));
+    }
+  }
+
+  /* ============ 生成班次（最後一段含結束時間） ============ */
+  function buildTrips(container, station) {
+    var out = [], rows = container.rows;
+
+    /* 收集所有有效時段，並算出各自的 s / e（已處理跨日） */
+    var segs = [];
+    for (var i = 0; i < rows.length; i++) {
+      var start = rows[i].querySelector(".p-start").value;
+      var end = rows[i].querySelector(".p-end").value;
+      var gap = parseFloat(rows[i].querySelector(".p-gap").value);
+      if (!start || !end || !(gap > 0)) continue;
+      var s = timeToMin(start), e = timeToMin(end);
+      if (e <= s) e += 1440;
+      segs.push({ s: s, e: e, g: Math.round(gap) });
+    }
+
+    /* 找出結束時間最晚的那一段（可能跨日，例如 25:00） */
+    var lastIdx = -1, lastEnd = -1;
+    for (var j = 0; j < segs.length; j++) {
+      if (segs[j].e > lastEnd) { lastEnd = segs[j].e; lastIdx = j; }
+    }
+
+    /* 生成班次：最後一段用 t <= e（含結束時間），其餘用 t < e */
+    for (var k = 0; k < segs.length; k++) {
+      var seg = segs[k];
+      if (k === lastIdx) {
+        for (var t1 = seg.s; t1 <= seg.e; t1 += seg.g) {
+          out.push({ time: t1, station: station });
+        }
+      } else {
+        for (var t2 = seg.s; t2 < seg.e; t2 += seg.g) {
+          out.push({ time: t2, station: station });
+        }
+      }
+    }
+    return out;
+  }
+
+  function simulate(trips, mode, travelTime, dwellA, dwellB, capA, capB) {
+    var buses = new Map();
+    var nextId = 1;
+    var assignments = [];
+
+    function refreshArrivals(t) {
+      buses.forEach(function (b) {
+        if (b.status === "moving" && b.etaTime <= t) {
+          b.status = "idle";
+          b.location = b.etaLocation;
+          b.arrivalTime = b.etaTime;
+          var dw = b.location === "A" ? dwellA : dwellB;
+          b.readyTime = b.arrivalTime + dw;
+          delete b.etaTime;
+          delete b.etaLocation;
+        }
+      });
+    }
+    function getIdleAt(station) {
+      var list = [];
+      buses.forEach(function (b) {
+        if (b.status === "idle" && b.location === station) list.push(b);
+      });
+      return list;
+    }
+
+    for (var i = 0; i < trips.length; i++) {
+      var trip = trips[i];
+      var t = trip.time;
+      var S = trip.station;
+      var cap = S === "A" ? capA : capB;
+
+      refreshArrivals(t);
+      var idleS = getIdleAt(S);
+
+      var pick = null;
+      var forced = false;
+
+      var readyList = idleS.filter(function (b) { return b.readyTime <= t; });
+      if (readyList.length > 0) {
+        readyList.sort(function (a, b) { return a.readyTime - b.readyTime; });
+        pick = readyList[0];
+      } else if (idleS.length >= cap) {
+        idleS.sort(function (a, b) { return a.arrivalTime - b.arrivalTime; });
+        pick = idleS[0];
+        forced = true;
+      } else {
+        var newBus = {
+          id: nextId++, status: "idle", location: S,
+          arrivalTime: t, readyTime: t,
+          first: t, firstStation: S, last: t, lastStation: S, count: 0
+        };
+        buses.set(newBus.id, newBus);
+        pick = newBus;
+      }
+
+      pick.last = t;
+      pick.lastStation = S;
+      pick.count++;
+      assignments.push({ t: t, station: S, busId: pick.id, forced: forced });
+
+      var dest, etaTime;
+      if (mode === "circular") { dest = "A"; etaTime = t + travelTime; }
+      else { dest = S === "A" ? "B" : "A"; etaTime = t + travelTime; }
+      pick.status = "moving";
+      pick.etaTime = etaTime;
+      pick.etaLocation = dest;
+    }
+
+    return { assignments: assignments, busMap: buses };
+  }
+
+  function classify(busList, totalSpan, thresholdPct) {
+    var limit = totalSpan * (thresholdPct / 100);
+    busList.forEach(function (b) {
+      b.span = b.last - b.first;
+      b.isS = totalSpan > 0 && b.span < limit;
+    });
+    var regs = busList.filter(function (b) { return !b.isS; })
+                      .sort(function (a, b) { return a.first - b.first || a.id - b.id; });
+    var ss = busList.filter(function (b) { return b.isS; })
+                    .sort(function (a, b) { return a.first - b.first || a.id - b.id; });
+    regs.forEach(function (b, i) { b.label = String(i + 1); });
+    ss.forEach(function (b, i) { b.label = "S" + (i + 1); });
+    var labelOf = new Map();
+    busList.forEach(function (b) { labelOf.set(b.id, b.label); });
+    return { regulars: regs, sBuses: ss, labelOf: labelOf };
+  }
+
+  function getStationName(station) {
+    var nameA = $("nameA").value.trim() || "A 總站";
+    var nameB = $("nameB").value.trim() || "B 總站";
+    if (currentMode === "circular") return nameA;
+    return station === "A" ? nameA : nameB;
+  }
+
+  function renderBuses(busList) }
+ {
+    var tbody = $("busBody   ");
+    tbody }
+
+.innerHTML = "";
+    busList.slice().   sort(function (a, b) {
+ var trips      if (a.isS !== b.isS) return a.isS ? 1 : -1;
+      return a.first - b.first || a.id - b.id;
+    }).forEach(function (b) {
+      var tr = document.createElement("tr");
+      var stn = function (s) {
+        var n = getStationName(s);
+        return s === "A"
+          ? "<span class='badge badge-a'>" + n + "</span>"
+          : "<span class='badge badge-b'>" + n + "</span>";
+      };
+      tr.innerHTML =
+        "<td><b>" + b.label + " 車</b></td>" +
+        "<td>" + (b.isS
+          ? '<span class="badge badge-s">備用車</span>'
+          : '<span class="badge badge-r">正軌車</span>') + "</td>" +
+        "<td>" + fmtTime(b.first) + " " + stn(b.firstStation) + "</td>" +
+        "<td>" + fmtTime(b.last) + " " + stn(b.lastStation) + "</td>" +
+        "<td>" + fmtDur(b.span) + "</td>" +
+        "<td>" + b.count + "</td>";
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderTrips(assignments, labelOf) {
+    var tbody = $("tripBody");
+    tbody.innerHTML = "";
+    var frag = document.createDocumentFragment();
+    assignments.forEach(function (a, i) {
+      var label = labelOf.get(a.busId);
+      var isS = String(label).charAt(0) === "S";
+      var n = getStationName(a.station);
+      var stn = a.station === "A"
+        ? "<span class='badge badge-a'>" + n + "</span>"
+        : "<span class='badge badge-b'>" + n + "</span>";
+      var note = a.forced
+        ? "<span class='badge badge-forced'>總站滿</span>"
+        : "";
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td style='color:#94a3b8'>" + (i + 1) + "</td>" +
+        "<td><b>" + fmtTime(a.t) + "</b></td>" +
+        "<td>" + stn + "</td>" +
+        "<td><span class='badge " + (isS ? "badge-s" : "badge-r") + "'>" + label + " 車</span></td>" +
+        "<td>" + note + "</td>";
+      frag.appendChild(tr);
+    });
+    tbody.appendChild(frag);
+  }
+
+  function runCalc() {
+    var travelTime = parseFloat($("travelTime").value);
+    var sPct = parseFloat($("sThreshold").value);
+    var dwellA = parseFloat($("dwellA").value);
+    var capA = parseInt($("capA").value, 10);
+    var dwellB = parseFloat($("dwellB").value);
+    var capB = parseInt($("capB").value, 10);
+
+    if (!(travelTime > 0)) { alert("請輸入有效的「" + (currentMode === "circular" ? "一圈時間" : "單程時間") + "」（大於 0）。"); return; }
+    if (!(sPct > 0 && sPct <= 100)) { alert("請輸入有效的「備用車門檻」（1 – 100）。"); return; }
+    if (!(dwellA >= 0)) { alert("請輸入有效的「A 總站停留」（0 或以上）。"); return; }
+    if (!(capA >= 0)) { alert("請輸入有效的「A 總站容量」（0 或以上）。"); return; }
+    if (currentMode === "bidirectional") {
+      if (!(dwellB >= 0)) { alert("請輸入有效的「B 總站停留」（0 或以上）。"); return; }
+      if (!(capB >= 0)) { alert("請輸入有效的「B 總站容量」（0 或以上）。"); return; = buildTrips(bodyA, "A");
+    if (currentMode === "bidirectional") {
+      trips = trips.concat(buildTrips(bodyB, "B"));
+    }
+    trips.sort(function (a, b) {
+      if (a.time !== b.time) return a.time - b.time;
+      return a.station.localeCompare(b.station);
+    });
+    if (!trips.length) { alert("請至少輸入一個有效的時間段。"); return; }
+
+    var sim = simulate(trips, currentMode, travelTime, dwellA, dwellB, capA, capB);
+    var totalSpan = trips[trips.length - 1].time - trips[0].time;
+    var busList = Array.from(sim.busMap.values());
+    var cls = classify(busList, totalSpan, sPct);
+
+    $("statTrips").textContent = trips.length;
+    $("statBuses").textContent = busList.length;
+    $("statRegular").textContent = cls.regulars.length;
+    $("statS").textContent = cls.sBuses.length;
+
+    renderBuses(busList);
+    renderTrips(sim.assignments, cls.labelOf);
+
+    var nameA = $("nameA").value.trim() || "A 總站";
+    var nameB = $("nameB").value.trim() || "B 總站";
+    var routeNo = $("routeNo").value.trim() || "—";
+
+    lastResult = {
+      meta: {
+        routeNo: routeNo,
+        nameA: nameA,
+        nameB: nameB,
+        mode: currentMode,
+        modeName: currentMode === "circular" ? "循環線" : "雙向線",
+        travelTime: travelTime,
+        travelLabel: currentMode === "circular" ? "一圈時間" : "單程時間",
+        dwellA: dwellA, capA: capA,
+        dwellB: dwellB, capB: capB,
+        sThreshold: sPct,
+        totalSpan: totalSpan,
+        generatedAt: new Date().toLocaleString("zh-HK")
+      },
+      summary: {
+        totalTrips: trips.length,
+        totalBuses: busList.length,
+        regularCount: cls.regulars.length,
+        sCount: cls.sBuses.length
+      },
+      buses: busList.slice().sort(function (a, b) {
+        if (a.isS !== b.isS) return a.isS ? 1 : -1;
+        return a.first - b.first || a.id - b.id;
+      }).map(function (b) {
+        return {
+          label: b.label,
+          type: b.isS ? "備用車" : "正軌車",
+          firstTime: minToTime(b.first),
+          firstStation: b.firstStation === "A" ? nameA : nameB,
+          lastTime: minToTime(b.last),
+          lastStation: b.lastStation === "A" ? nameA : nameB,
+          spanMin: b.span,
+          spanText: fmtDur(b.span),
+          tripCount: b.count
+        };
+      }),
+      trips: sim.assignments.map(function (a, i) {
+        return {
+          seq: i + 1,
+          time: minToTime(a.t),
+          station: a.station === "A" ? nameA : nameB,
+          busLabel: cls.labelOf.get(a.busId),
+          forced: a.forced
+        };
+      })
+    };
+
+    $("result").classList.remove("hidden");
+    setTimeout(function () {
+      try { $("result").scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+    }, 60);
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    var isCirc = mode === "circular";
+    $("modeOptBi").classList.toggle("on", !isCirc);
+    $("modeOptCir").classList.toggle("on", isCirc);
+    $("cardB").classList.toggle("hidden", isCirc);
+    $("lblTravel").textContent = isCirc ? "一圈時間（分鐘）" : "單程時間（分鐘）";
+    $("hintTravel").textContent = isCirc
+      ? "由 A 開出繞一圈回到 A 所需時間"
+      : "由總站開到對面總站所需時間";
+    refreshStationLabels();
+  }
+
+  function refreshStationLabels() {
+    var nameA = $("nameA").value.trim() || "A 總站";
+    var nameB = $("nameB").value.trim() || "B 總站";
+    $("modeDescBi").textContent = nameA + " ↔ " + nameB;
+    $("titleA").innerHTML = nameA + ' <span class="tag">' +
+      (currentMode === "circular" ? "循環線" : "雙向線") + '</span>';
+    $("titleB").innerHTML = nameB + ' <span class="tag">雙向線</span>';
+    $("lblDwellA").textContent = nameA + " 總站停留（分鐘）";
+    $("lblCapA").textContent = nameA + " 總站容量（輛）";
+    $("lblDwellB").textContent = nameB + " 總站停留（分鐘）";
+    $("lblCapB").textContent = nameB + " 總站容量（輛）";
+  }
+
+  var exportModal = $("exportModal");
+  var exportTextarea = $("exportTextarea");
+  var currentExportFormat = "txt";
+
+  function buildExportTxt(r) {
+    var L = [];
+    function sep() { L.push("────────────────────────────────────────"); }
+
+    L.push("基本資料");
+    L.push("  路線：" + r.meta.routeNo);
+    L.push("  總站：" + r.meta.nameA + "↔" + r.meta.nameB);
+    L.push("  路線模式：" + r.meta.modeName);
+    L.push("  " + r.meta.travelLabel + "：" + r.meta.travelTime + " 分鐘");
+    L.push("  " + r.meta.nameA + " 總站：");
+    L.push("    停留：" + r.meta.dwellA + " 分鐘");
+    L.push("    容量：" + r.meta.capA + " 輛");
+    if (r.meta.mode === "bidirectional") {
+      L.push("  " + r.meta.nameB + " 總站：");
+      L.push("    停留：" + r.meta.dwellB + " 分鐘");
+      L.push("    容量：" + r.meta.capB + " 輛");
+    }
+    L.push("  全日營運時間：" + fmtDur(r.meta.totalSpan));
+    L.push("");
+
+    L.push("統計摘要");
+    L.push("  總班次：" + r.summary.totalTrips);
+    L.push("  總用車：" + r.summary.totalBuses);
+    L.push("  正軌車：" + r.summary.regularCount);
+    L.push("  備用車：" + r.summary.sCount);
+    L.push("");
+
+    L.push("用車總結");
+    var bCols = [
+      { title: "車輛", width: 10 },
+      { title: "類型", width: 8 },
+      { title: "首次出場", width: 22 },
+      { title: "末次出場", width: 22 },
+      { title: "活躍時間", width: 12 },
+      { title: "班次數", width: 6 }
+    ];
+    L.push("  " + bCols.map(function (c) { return padRight(c.title, c.width); }).join(" "));
+    sep();
+    r.buses.forEach(function (b) {
+      L.push("  " + [
+        padRight(b.label + " 車", bCols[0].width),
+        padRight(b.type, bCols[1].width),
+        padRight(b.firstTime + "@" + b.firstStation, bCols[2].width),
+        padRight(b.lastTime + "@" + b.lastStation, bCols[3].width),
+        padRight(b.spanText, bCols[4].width),
+        padLeft(String(b.tripCount), bCols[5].width)
+      ].join(" "));
+    });
+    L.push("");
+
+    L.push("派車表");
+    var tCols = [
+      { title: "#", width: 6 },
+      { title: "發車時間", width: 10 },
+      { title: "出發站", width: 22 },
+      { title: "派出車輛", width: 10 },
+      { title: "備註", width: 12 }
+    ];
+    L.push("  " + tCols.map(function (c) { return padRight(c.title, c.width); }).join(" "));
+    sep();
+    r.trips.forEach(function (t) {
+      L.push("  " + [
+        padLeft(t.seq + ".", tCols[0].width),
+        padRight(t.time, tCols[1].width),
+        padRight(t.station, tCols[2].width),
+        padRight(t.busLabel + " 車", tCols[3].width),
+        padRight(t.forced ? "（總站滿）" : "", tCols[4].width)
+      ].join(" "));
+    });
+    L.push("");
+    sep();
+    L.push("由 天南市 掛牌車計算機 產生 · " + r.meta.generatedAt);
+    return L.join("\n");
+  }
+
+  function buildExportCsv(r) {
+    function esc(v) {
+      var s = String(v == null ? "" : v);
+      if (s.indexOf(",") >= 0 || s.indexOf("\"") >= 0 || s.indexOf("\n") >= 0) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }
+    var rows = [];
+    rows.push(["天南市 掛牌車計算機 — 計算結果"]);
+    rows.push(["導出時間", r.meta.generatedAt]);
+    rows.push([]);
+    rows.push(["【基本資料】"]);
+    rows.push(["路線", r.meta.routeNo]);
+    rows.push(["總站", r.meta.nameA + "↔" + r.meta.nameB]);
+    rows.push(["路線模式", r.meta.modeName]);
+    rows.push([r.meta.travelLabel, r.meta.travelTime + " 分鐘"]);
+    rows.push([r.meta.nameA + " 總站停留", r.meta.dwellA + " 分鐘"]);
+    rows.push([r.meta.nameA + " 總站容量", r.meta.capA + " 輛"]);
+    if (r.meta.mode === "bidirectional") {
+      rows.push([r.meta.nameB + " 總站停留", r.meta.dwellB + " 分鐘"]);
+      rows.push([r.meta.nameB + " 總站容量", r.meta.capB + " 輛"]);
+    }
+    rows.push(["全日營運時間", fmtDur(r.meta.totalSpan)]);
+    rows.push([]);
+    rows.push(["【統計摘要】"]);
+    rows.push(["總班次", r.summary.totalTrips]);
+    rows.push(["總用車", r.summary.totalBuses]);
+    rows.push(["正軌車", r.summary.regularCount]);
+    rows.push(["備用車", r.summary.sCount]);
+    rows.push([]);
+    rows.push(["【用車總結】"]);
+    rows.push(["車輛", "類型", "首次出場", "首次出場站", "末次出場", "末次出場站", "活躍時間(分)", "活躍時間", "班次數"]);
+    r.buses.forEach(function (b) {
+      rows.push([b.label + " 車", b.type, b.firstTime, b.firstStation,
+        b.lastTime, b.lastStation, b.spanMin, b.spanText, b.tripCount]);
+    });
+    rows.push([]);
+    rows.push(["【派車表】"]);
+    rows.push(["#", "發車時間", "出發站", "派出車輛", "備註"]);
+    r.trips.forEach(function (t) {
+      rows.push([t.seq, t.time, t.station, t.busLabel + " 車",
+        t.forced ? "總站滿" : ""]);
+    });
+    return rows.map(function (row) {
+      return row.map(esc).join(",");
+    }).join("\n");
+  }
+
+  function buildExportJson(r) {
+    return JSON.stringify(r, null, 2);
+  }
+
+  function buildExport(format) {
+    if (!lastResult) return "";
+    if (format === "csv") return buildExportCsv(lastResult);
+    if (format === "json") return buildExportJson(lastResult);
+    return buildExportTxt(lastResult);
+  }
+
+  function openExportModal() {
+    if (!lastResult) { alert("請先按「開始計算」。"); return; }
+    exportTextarea.value = buildExport(currentExportFormat);
+    exportModal.classList.remove("hidden");
+  }
+  function closeExportModal() { exportModal.classList.add("hidden"); }
+
+  function switchExportFormat(fmt) {
+    currentExportFormat = fmt;
+    var opts = document.querySelectorAll(".export-opt");
+    for (var i = 0; i < opts.length; i++) {
+      opts[i].classList.toggle("on", opts[i].getAttribute("data-fmt") === fmt);
+    }
+    exportTextarea.value = buildExport(fmt);
+  }
+
+  function downloadExport() {
+    if (!lastResult) return;
+    var content = buildExport(currentExportFormat);
+    var ext = currentExportFormat === "txt" ? "txt"
+            : currentExportFormat === "csv" ? "csv" : "json";
+    var mime = currentExportFormat === "csv" ? "text/csv;charset=utf-8"
+             : currentExportFormat === "json" ? "application/json;charset=utf-8"
+             : "text/plain;charset=utf-8";
+    var filename = "天南市路線" + lastResult.meta.routeNo + "_" +
+      (lastResult.meta.generatedAt || "").replace(/[\/:\s]/g, "").replace(/,/g, "_") +
+      "." + ext;
+    try {
+      var blob = new Blob(["\uFEFF" + content], { type: mime });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    } catch (err) {
+      console.error(err);
+      alert("下載失敗，請改用「複製」手動貼上。");
+    }
+  }
+
+  function copyExport() {
+    var text = exportTextarea.value;
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        alert("已複製到剪貼簿 ✅");
+      }).catch(function () {
+        exportTextarea.select();
+        document.execCommand("copy");
+        alert("已複製到剪貼簿 ✅");
+      });
+    } else {
+      exportTextarea.select();
+      try {
+        document.execCommand("copy");
+        alert("已複製到剪貼簿 ✅");
+      } catch (e) {
+        alert("複製失敗，請手動選取文字。");
+      }
+    }
+  }
+
+  function onDocumentClick(e) {
+    var target = e.target;
+    if (!target || target.nodeType !== 1) {
+      target = target && target.parentNode ? target.parentNode : null;
+    }
+    if (!target || typeof target.closest !== "function") return;
+
+    try {
+      var delBtn = target.closest("[data-action='del-row']");
+      if (delBtn) {
+        var tr = delBtn.closest("tr");
+        if (tr) {
+          var container = tr.parentNode;
+          if (container && container.rows && container.rows.length <= 1) {
+            alert("最少要保留一個時間段。");
+            return;
+          }
+          tr.parentNode.removeChild(tr);
+        }
+        return;
+      }
+
+      var addBtn = target.closest("[data-add]");
+      if (addBtn) {
+        var which = addBtn.getAttribute("data-add");
+        var c = which === "A" ? bodyA : bodyB;
+        var lastEnd = "08:00";
+        if (c.rows.length) {
+          lastEnd = c.rows[c.rows.length - 1].querySelector(".p-end").value || "08:00";
+        }
+        createRow(c, lastEnd, lastEnd, 15);
+        return;
+      }
+
+      var importBtn = target.closest("[data-import]");
+      if (importBtn) {
+        openImportModal(importBtn.getAttribute("data-import"));
+        return;
+      }
+
+      var optEl = target.closest(".export-opt");
+      if (optEl) {
+        switchExportFormat(optEl.getAttribute("data-fmt"));
+        return;
+      }
+
+      var id = target.id;
+      if (id === "clearAll") {
+        bodyA.innerHTML = "";
+        bodyB.innerHTML = "";
+        createRow(bodyA, "06:00", "08:00", 15);
+        createRow(bodyB, "06:30", "08:30", 15);
+        $("result").classList.add("hidden");
+        lastResult = null;
+        return;
+      }
+      if (id === "calcBtn") {
+        try { runCalc(); }
+        catch (err) { console.error(err); alert("計算時發生錯誤，請重新載入頁面。"); }
+        return;
+      }
+      if (id === "exportBtn") { openExportModal(); return; }
+      if (id === "exportClose" || id === "exportCloseBtn") { closeExportModal(); return; }
+      if (id === "exportDownloadBtn") { downloadExport(); return; }
+      if (id === "exportCopyBtn") { copyExport(); return; }
+      if (id === "modalClose" || id === "modalCancel") { closeImportModal(); return; }
+      if (id === "modalConfirm") { applyImport(); return; }
+    } catch (err) {
+      console.error("[天南市] 點擊處理錯誤:", err);
+    }
+  }
+
+  function init() {
+    try {
+      createRow(bodyA, "05:00", "07:00", 30);
+      createRow(bodyA, "07:00", "10:00", 20);
+      createRow(bodyA, "10:00", "15:00", 15);
+      createRow(bodyA, "15:00", "19:00", 20);
+      createRow(bodyA, "19:00", "01:00", 30);
+      createRow(bodyB, "05:30", "07:00", 30);
+      createRow(bodyB, "07:00", "19:00", 20);
+      createRow(bodyB, "19:00", "01:00", 30);
+
+      setMode("bidirectional");
+
+      var na = $("nameA");
+      var nb = $("nameB");
+      if (na) na.addEventListener("input", refreshStationLabels);
+      if (nb) nb.addEventListener("input", refreshStationLabels);
+
+      document.addEventListener("click", onDocumentClick);
+
+      if (modal) modal.addEventListener("click", function (e) {
+        if (e.target === modal) closeImportModal();
+      });
+      if (exportModal) exportModal.addEventListener("click", function (e) {
+        if (e.target === exportModal) closeExportModal();
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          if (modal && !modal.classList.contains("hidden")) closeImportModal();
+          if (exportModal && !exportModal.classList.contains("hidden")) closeExportModal();
+        }
+      });
+
+      var radios = document.querySelectorAll("input[name='mode']");
+      for (var i = 0; i < radios.length; i++) {
+        radios[i].addEventListener("change", function () {
+          setMode(this.value);
+        });
+      }
+    } catch (err) {
+      console.error("[天南市] 初始化錯誤:", err);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
