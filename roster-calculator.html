@@ -432,7 +432,6 @@
 
 </div>
 
-<!-- 導入模態框 -->
 <div id="importModal" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-header">
@@ -454,7 +453,6 @@
   </div>
 </div>
 
-<!-- 導出模態框 -->
 <div id="exportModal" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-header">
@@ -636,11 +634,9 @@
     }
   }
 
-  /* ============ 生成班次（最後一段含結束時間） ============ */
   function buildTrips(container, station) {
     var out = [], rows = container.rows;
 
-    /* 收集所有有效時段，並算出各自的 s / e（已處理跨日） */
     var segs = [];
     for (var i = 0; i < rows.length; i++) {
       var start = rows[i].querySelector(".p-start").value;
@@ -652,13 +648,11 @@
       segs.push({ s: s, e: e, g: Math.round(gap) });
     }
 
-    /* 找出結束時間最晚的那一段（可能跨日，例如 25:00） */
     var lastIdx = -1, lastEnd = -1;
     for (var j = 0; j < segs.length; j++) {
       if (segs[j].e > lastEnd) { lastEnd = segs[j].e; lastIdx = j; }
     }
 
-    /* 生成班次：最後一段用 t <= e（含結束時間），其餘用 t < e */
     for (var k = 0; k < segs.length; k++) {
       var seg = segs[k];
       if (k === lastIdx) {
@@ -770,14 +764,11 @@
     return station === "A" ? nameA : nameB;
   }
 
-  function renderBuses(busList) }
- {
-    var tbody = $("busBody   ");
-    tbody }
-
-.innerHTML = "";
-    busList.slice().   sort(function (a, b) {
- var trips      if (a.isS !== b.isS) return a.isS ? 1 : -1;
+  function renderBuses(busList) {
+    var tbody = $("busBody");
+    tbody.innerHTML = "";
+    busList.slice().sort(function (a, b) {
+      if (a.isS !== b.isS) return a.isS ? 1 : -1;
       return a.first - b.first || a.id - b.id;
     }).forEach(function (b) {
       var tr = document.createElement("tr");
@@ -840,7 +831,10 @@
     if (!(capA >= 0)) { alert("請輸入有效的「A 總站容量」（0 或以上）。"); return; }
     if (currentMode === "bidirectional") {
       if (!(dwellB >= 0)) { alert("請輸入有效的「B 總站停留」（0 或以上）。"); return; }
-      if (!(capB >= 0)) { alert("請輸入有效的「B 總站容量」（0 或以上）。"); return; = buildTrips(bodyA, "A");
+      if (!(capB >= 0)) { alert("請輸入有效的「B 總站容量」（0 或以上）。"); return; }
+    }
+
+    var trips = buildTrips(bodyA, "A");
     if (currentMode === "bidirectional") {
       trips = trips.concat(buildTrips(bodyB, "B"));
     }
